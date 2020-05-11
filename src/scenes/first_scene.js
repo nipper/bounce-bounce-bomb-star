@@ -24,6 +24,8 @@ export default class GameScene extends Phaser.Scene {
     this.load.image(GROUND_KEY, "assets/platform.png");
     this.load.image(STAR_KEY, "assets/star.png");
     this.load.image("bomb", "assets/bomb.png");
+    this.load.image("tiles", "assets/tilesheet_complete_small.png");
+    this.load.tilemapTiledJSON("map", "assets/first_level_tilemap.json");
 
     this.load.spritesheet(PLAYER_KEY, "assets/dude.png", {
       frameWidth: 32,
@@ -33,17 +35,21 @@ export default class GameScene extends Phaser.Scene {
 
   create() {
     this.add.image(400, 300, "sky");
-    this.createPlatforms();
+
+    const map = this.make.tilemap({ key: "map" });
+    const tileset = map.addTilesetImage("level_tileset", "tiles");
+    const test = map.createStaticLayer("platforms", tileset, 0, 0);
+    test.setCollisionByExclusion(-1, true);
+
     this.createPlayer();
     this.createStars();
     this.scoreLabel = this.createScoreLabel(16, 16, 0);
     this.bombSpawner = new BombSpawner(this, BOMB_KEY);
     const bombsGroup = this.bombSpawner.group;
-    console.log(this.platforms);
 
-    this.physics.add.collider(this.player, this.platforms);
-    this.physics.add.collider(this.stars, this.platforms);
-    this.physics.add.collider(bombsGroup, this.platforms);
+    this.physics.add.collider(this.player, test);
+    this.physics.add.collider(this.stars, test);
+    this.physics.add.collider(bombsGroup, test);
     this.physics.add.collider(
       this.player,
       bombsGroup,
@@ -78,15 +84,13 @@ export default class GameScene extends Phaser.Scene {
 
       this.player.anims.play("turn");
     }
-
-    if (this.cursors.up.isDown && this.player.body.touching.down) {
+    if (this.cursors.up.isDown && this.player.body.blocked.down) {
       this.player.setVelocityY(-330);
     }
   }
 
   createPlatforms() {
     this.platforms = this.physics.add.staticGroup();
-
     this.platforms.create(400, 568, GROUND_KEY).setScale(2).refreshBody();
 
     this.platforms.create(600, 400, GROUND_KEY);
